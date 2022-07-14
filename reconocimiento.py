@@ -54,6 +54,10 @@ cap = cv2.VideoCapture('http://192.168.20.22:8080/video')
 # Caffe (Convolutional Architecture for Fast Feature Embedding) is a 
 # deep learning framework that allows users to create image classification 
 # and image segmentation models
+# 1 .prototxt — The definition of CNN goes in here. This file 
+# defines the layers in the neural network, each layer’s inputs, outputs and functionality.
+# 2 .caffemodel — This contains the information of the trained neural network (trained model).
+# pre-trained CNN models which will do the detection
 age_net = cv2.dnn.readNetFromCaffe(
 		'data/deploy_age.prototxt', 
 		'data/age_net.caffemodel')
@@ -62,7 +66,7 @@ gender_net = cv2.dnn.readNetFromCaffe(
 		'data/deploy_gender.prototxt', 
 		'data/gender_net.caffemodel')
 
-
+# Create 3 separate lists for storing Model_Mean_Values, Age and Gender.
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 age_list = ['(0, 2)', '(4, 6)', '(8, 12)', '(15, 20)', '(25, 32)', '(38, 43)', '(48, 53)', '(60, 100)']
 gender_list = ['Male', 'Female']
@@ -77,24 +81,29 @@ while True:
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 	#redimensionar la imagen, shape[1] medidas en x, shape[0] medidas en y
-	mini = cv2.resize(gray, (int(gray.shape[1] / size_miniatura), int(gray.shape[0] / size_miniatura)))
+	mini_img = cv2.resize(gray, (int(gray.shape[1] / size_miniatura), int(gray.shape[0] / size_miniatura)))
 
 	"""buscamos las coordenadas de los rostros (si los hay) y
 		guardamos su posicion"""
-	#TODO: POR ENTEDER 
-	faces = face_cascade.detectMultiScale(mini)
+	# Caffe is a deep learning framework,
+	# Detecta el lugar de los objetos, que tantos y que objetos son 
+	faces = face_cascade.detectMultiScale(mini_img)
 
-	#TODO: POR ENTEDER 
-	for i in range(len(faces)):
-		face_i = faces[i]
+	#Recorremos en la lista de caras encontradas
+	for face_indx in range(len(faces)):
+		face_i = faces[face_indx]
 		#Adjunta el tamaño en cordenadas del el rectangulo en la imagen
 		(x, y, w, h) = [v * size_miniatura for v in face_i]
 
 		# Obteniendo rostro
-		#Ajustamos la imagen en un rectangulo
+		# Ajustamos la imagen en un rectangulo
 		face_img = frame[y:y+h, h:h+w].copy()
 
-		#TODO: POR ENTEDER 
+		# TODO: POR ENTEDER 
+		# Image preprocessing for deep learning
+		# Mean subtraction
+		# Scaling
+   		# And optionally channel swapping
 		blob = cv2.dnn.blobFromImage(face_img, 1, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
 
 		#Ajustamos la imagen en un rectangulo
@@ -111,21 +120,19 @@ while True:
 		#Ajustamos las imagenes en un rectangulo
 		roi_gray = gray[y:y + h, x:x + w]
 		roi_color = frame[y:y + h, x:x + w]
-		
-		#TODO: POR ENTEDER 
+		# Caffe is a deep learning framework,
+		# Detecta el lugar de los objetos, que tantos y que objetos son
 		eyes = eye_cascade.detectMultiScale(roi_gray)
 
 		#Dibujamos un rectangulo en las coordenadas de los ojos
 		for (ex, ey, ew, eh) in eyes:
 			cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
-		#TODO: POR ENTEDER 
 		#Predcir Genero
 		gender_net.setInput(blob)
 		gender_preds = gender_net.forward()
 		gender = gender_list[gender_preds[0].argmax()]
 
-		#TODO: POR ENTEDER 
 		#Predecir Edad
 		age_net.setInput(blob)
 		age_preds = age_net.forward()
